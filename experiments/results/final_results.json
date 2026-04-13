@@ -1,0 +1,183 @@
+{
+  "embedding_experiments": {
+    "baseline": {
+      "lang_pairs": {
+        "en_mr": {
+          "n": 19491,
+          "aligned_sim": 0.6668,
+          "random_sim": 0.0897,
+          "gap": 0.5771,
+          "accuracy_at_1": 0.3561,
+          "mrr": 0.458
+        },
+        "en_kn": {
+          "n": 19491,
+          "aligned_sim": 0.3088,
+          "random_sim": 0.1178,
+          "gap": 0.191,
+          "accuracy_at_1": 0.0758,
+          "mrr": 0.1167
+        },
+        "en_hi": {
+          "n": 5479,
+          "aligned_sim": 0.7762,
+          "random_sim": 0.0777,
+          "gap": 0.6985,
+          "accuracy_at_1": 0.4864,
+          "mrr": 0.6269
+        },
+        "mr_kn": {
+          "n": 19491,
+          "aligned_sim": 0.3871,
+          "random_sim": 0.2094,
+          "gap": 0.1777,
+          "accuracy_at_1": 0.062,
+          "mrr": 0.0946
+        },
+        "mr_hi": {
+          "n": 5479,
+          "aligned_sim": 0.7003,
+          "random_sim": 0.1205,
+          "gap": 0.5797,
+          "accuracy_at_1": 0.3112,
+          "mrr": 0.4278
+        }
+      },
+      "centroid_bias": {
+        "EN_MR_centroid_sim": 0.9051,
+        "EN_KN_centroid_sim": 0.5281,
+        "EN_HI_centroid_sim": 0.914,
+        "MR_KN_centroid_sim": 0.6401
+      }
+    },
+    "triplet": {
+      "lang_pairs": {
+        "en_mr": {
+          "n": 19491,
+          "aligned_sim": 0.9881,
+          "random_sim": 0.9404,
+          "gap": 0.0477,
+          "accuracy_at_1": 0.3894,
+          "mrr": 0.4965
+        },
+        "en_kn": {
+          "n": 19491,
+          "aligned_sim": 0.9875,
+          "random_sim": 0.9448,
+          "gap": 0.0426,
+          "accuracy_at_1": 0.3487,
+          "mrr": 0.4624
+        },
+        "en_hi": {
+          "n": 5479,
+          "aligned_sim": 0.9912,
+          "random_sim": 0.9431,
+          "gap": 0.0481,
+          "accuracy_at_1": 0.4583,
+          "mrr": 0.5973
+        },
+        "mr_kn": {
+          "n": 19491,
+          "aligned_sim": 0.9854,
+          "random_sim": 0.9417,
+          "gap": 0.0437,
+          "accuracy_at_1": 0.2501,
+          "mrr": 0.3474
+        },
+        "mr_hi": {
+          "n": 5479,
+          "aligned_sim": 0.9884,
+          "random_sim": 0.9399,
+          "gap": 0.0485,
+          "accuracy_at_1": 0.3411,
+          "mrr": 0.4682
+        }
+      },
+      "centroid_bias": {
+        "EN_MR_centroid_sim": 0.9995,
+        "EN_KN_centroid_sim": 0.9992,
+        "EN_HI_centroid_sim": 0.9992,
+        "MR_KN_centroid_sim": 0.9998
+      }
+    },
+    "quadruplet": {
+      "lang_pairs": {
+        "en_mr": {
+          "n": 19491,
+          "aligned_sim": 0.9865,
+          "random_sim": 0.9404,
+          "gap": 0.0461,
+          "accuracy_at_1": 0.4129,
+          "mrr": 0.5233
+        },
+        "en_kn": {
+          "n": 19491,
+          "aligned_sim": 0.985,
+          "random_sim": 0.9454,
+          "gap": 0.0396,
+          "accuracy_at_1": 0.3639,
+          "mrr": 0.4799
+        },
+        "en_hi": {
+          "n": 5479,
+          "aligned_sim": 0.9901,
+          "random_sim": 0.9412,
+          "gap": 0.0489,
+          "accuracy_at_1": 0.4835,
+          "mrr": 0.6205
+        },
+        "mr_kn": {
+          "n": 19491,
+          "aligned_sim": 0.9883,
+          "random_sim": 0.9537,
+          "gap": 0.0346,
+          "accuracy_at_1": 0.2439,
+          "mrr": 0.3433
+        },
+        "mr_hi": {
+          "n": 5479,
+          "aligned_sim": 0.99,
+          "random_sim": 0.9486,
+          "gap": 0.0414,
+          "accuracy_at_1": 0.3336,
+          "mrr": 0.4565
+        }
+      },
+      "centroid_bias": {
+        "EN_MR_centroid_sim": 0.9991,
+        "EN_KN_centroid_sim": 0.999,
+        "EN_HI_centroid_sim": 0.9992,
+        "MR_KN_centroid_sim": 0.9999
+      }
+    }
+  },
+  "translation_experiments": {
+    "mr_to_kn_pivot": {
+      "corpus_bleu": 2.774908463173115,
+      "corpus_chrf": 32.501033769564934,
+      "bertscore_f1": 0.7865,
+      "n": 100,
+      "time_seconds": 26.9
+    },
+    "kn_to_mr_pivot": {
+      "corpus_bleu": 7.438070428924344,
+      "corpus_chrf": 32.410972199119506,
+      "bertscore_f1": 0.7855,
+      "n": 100,
+      "time_seconds": 21.3
+    },
+    "round_trip_en_mr_en": {
+      "cosine_similarity": 0.8979,
+      "n": 100,
+      "time_seconds": 27.4,
+      "interpretation": "Higher = more meaning preserved"
+    },
+    "en_to_kn_direct": {
+      "corpus_bleu": 3.0361874828580087,
+      "corpus_chrf": 36.224229978207326,
+      "bertscore_f1": 0.8076,
+      "n": 100,
+      "time_seconds": 12.1
+    }
+  }
+}

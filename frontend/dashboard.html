@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LexBridge — Multilingual Legal MT Research</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <style>
+    /* ── Design tokens ───────────────────────────────────────────── */
+    :root {
+      --bg-0:      #060810;
+      --bg-1:      #0b0e1a;
+      --bg-2:      #111523;
+      --bg-3:      #171c2e;
+      --bg-4:      #1d2338;
+      --bg-hover:  #232943;
+
+      --border-1:  #1a1f35;
+      --border-2:  #252c47;
+      --border-hi: rgba(99,102,241,.5);
+
+      --text-1: #f0f2fa;
+      --text-2: #8b95b8;
+      --text-3: #5a6380;
+      --text-4: #3d4460;
+
+      --indigo:       #6366f1;
+      --indigo-light: #818cf8;
+      --indigo-dim:   rgba(99,102,241,.12);
+      --indigo-glow:  0 0 20px rgba(99,102,241,.35);
+      --indigo-btn:   rgba(99,102,241,.18);
+
+      --cyan:         #22d3ee;
+      --cyan-dim:     rgba(34,211,238,.1);
+      --violet:       #a78bfa;
+      --violet-dim:   rgba(167,139,250,.1);
+      --green:        #34d399;
+      --green-dim:    rgba(52,211,153,.1);
+      --amber:        #fbbf24;
+      --amber-dim:    rgba(251,191,36,.1);
+      --red:          #f87171;
+      --red-dim:      rgba(248,113,113,.1);
+
+      --radius:    10px;
+      --radius-sm:  6px;
+      --radius-lg: 16px;
+      --transition: 160ms ease;
+      --font: 'Inter', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Reset ───────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font);
+      font-size: 14px;
+      color: var(--text-1);
+      background-color: var(--bg-0);
+      background-image:
+        radial-gradient(ellipse 80% 40% at 15% 0%, rgba(99,102,241,.07) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 35% at 85% 5%, rgba(34,211,238,.05) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 30% at 90% 92%, rgba(167,139,250,.05) 0%, transparent 45%);
+      min-height: 100vh;
+    }
+
+    /* ── Scrollbar ───────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-1); }
+    ::-webkit-scrollbar-thumb { background: var(--bg-4); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border-2); }
+
+    /* ── Typography helpers ──────────────────────────────────────── */
+    .label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-3);
+    }
+    .mono { font-family: var(--mono); }
+    .tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 9px;
+      border-radius: 20px;
+      font-size: 11px; font-weight: 600; letter-spacing: .05em;
+      border: 1px solid transparent;
+    }
+    .tag-indigo { background: var(--indigo-dim); color: var(--indigo-light); border-color: rgba(99,102,241,.25); }
+    .tag-cyan   { background: var(--cyan-dim);   color: var(--cyan);         border-color: rgba(34,211,238,.25); }
+    .tag-green  { background: var(--green-dim);  color: var(--green);        border-color: rgba(52,211,153,.25); }
+    .tag-amber  { background: var(--amber-dim);  color: var(--amber);        border-color: rgba(251,191,36,.25); }
+    .tag-red    { background: var(--red-dim);    color: var(--red);          border-color: rgba(248,113,113,.25); }
+    .tag-violet { background: var(--violet-dim); color: var(--violet);       border-color: rgba(167,139,250,.25); }
+
+    /* ── Layout ──────────────────────────────────────────────────── */
+    .page {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 20px 40px;
+    }
+
+    /* ── Topbar ──────────────────────────────────────────────────── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 0 12px;
+      border-bottom: 1px solid var(--border-1);
+      position: sticky;
+      top: 0;
+      background: rgba(6,8,16,.88);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+    }
+    .brand {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none;
+    }
+    .brand-icon {
+      width: 36px; height: 36px;
+      background: var(--indigo-dim);
+      border: 1px solid rgba(99,102,241,.3);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .brand-text { line-height: 1; }
+    .brand-name {
+      font-size: 17px; font-weight: 700;
+      color: var(--text-1);
+      letter-spacing: -.02em;
+    }
+    .brand-sub {
+      font-size: 10px; font-weight: 500;
+      color: var(--text-3);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .topbar-nav {
+      display: flex; align-items: center; gap: 2px;
+      background: var(--bg-2);
+      border: 1px solid var(--border-1);
+      border-radius: var(--radius);
+      padding: 4px;
+    }
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-3);
+      font-family: var(--font);
+      font-size: 13px; font-weight: 500;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: flex; align-items: center; gap: 6px;
+      white-space: nowrap;
+    }
+    .nav-btn:hover { color: var(--text-1); background: var(--bg-4); }
+    .nav-btn.active {
+      background: var(--indigo);
+      color: #fff;
+      box-shadow: var(--indigo-glow);
+    }
+    .nav-btn .nav-icon { font-size: 15px; }
+
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    #backend-badge {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px; font-weight: 500;
+      border: 1px solid var(--border-2);
+      background: var(--bg-2);
+      color: var(--text-3);
+      cursor: default;
+    }
+    #backend-badge .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--text-4);
+      transition: background .3s;
+    }
+    #backend-badge.online { color: var(--green); border-color: rgba(52,211,153,.3); background: var(--green-dim); }
+    #backend-badge.online .dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    #backend-badge.offline { color: var(--red); border-color: rgba(248,113,113,.3); background: var(--red-dim); }
+    #backend-badge.offline .dot { background: var(--red); }
+
+    .icon-btn {
+      width: 34px; height: 34px;
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-sm);
+      background: var(--bg-2);
+      color: var(--text-2);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      transition: all var(--transition);
+    }
+    .icon-btn:hover { background: var(--bg-4); color: var(--text-1); border-color: var(--border-hi); }
+
+    /* ── Stats Row ───────────────────────────────────────────────── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin: 18px 0 16px;
+    }
+    .stat-card {
+      background: var(--bg-2);
+      border: 1px solid var(--border-1);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex; flex-direction: column; gap: 4px;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .stat-card:hover { border-color: var(--border-2); box-shadow: 0 4px 20px rgba(0,0,0,.3); }
+    .stat-value {
+      font-size: 26px; font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-1);
+      letter-spacing: -.03em;
+    }
+    .stat-value.loading { animation: pulse 1.4s ease infinite; color: var(--text-4); }
+    .stat-label { font-size: 11px; font-weight: 600; color: var(--text-3); letter-spacing: .06em; text-transform: uppercase; }
+    .stat-sub   { font-size: 11px; color: var(--text-4); margin-top: 2px; }
+    .stat-bar   { height: 3px; border-radius: 2px; background: var(--bg-4); margin-top: 8px; overflow: hidden; }
+    .stat-bar-fill { height: 100%; border-radius: 2px; transition: width .8s ease; }
+
+    /* ── Panels ──────────────────────────────────────────────────── */
+    .panel { display: none; animation: fadeUp .2s ease; }
+    .panel.active { display: block; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; } 50% { opacity: .4; }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ── Card ────────────────────────────────────────────────────── */
+    .card {
+      background: var(--bg-2);
+      border: 1px solid var(--border-1);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 13px; font-weight: 600;
+      color: var(--text-2);
+      letter-spacing: .02em;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-title .icon { font-size: 15px; }
+
+    /* ── Form elements ───────────────────────────────────────────── */
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-label { font-size: 11px; font-weight: 600; color: var(--text-3); letter-spacing: .06em; text-transform: uppercase; }
+    textarea, select, input[type="text"] {
+      width: 100%;
+      background: var(--bg-3);
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-sm);
+      color: var(--text-1);
+      font-family: var(--font);
+      font-size: 13px;
+      padding: 10px 12px;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      outline: none;
+      -webkit-appearance: none;
+    }
+    textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+    textarea:focus, select:focus, input[type="text"]:focus {
+      border-color: var(--indigo);
+      box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+    }
+    select { cursor: pointer; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 9px 18px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font);
+      font-size: 13px; font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+    .btn:disabled { opacity: .45; pointer-events: none; }
+    .btn-primary {
+      background: var(--indigo);
+      color: #fff;
+      border-color: rgba(99,102,241,.5);
+      box-shadow: 0 2px 10px rgba(99,102,241,.3);
+    }
+    .btn-primary:hover { background: var(--indigo-light); box-shadow: var(--indigo-glow); }
+    .btn-secondary {
+      background: var(--bg-3);
+      color: var(--text-2);
+      border-color: var(--border-2);
+    }
+    .btn-secondary:hover { background: var(--bg-4); color: var(--text-1); border-color: var(--border-hi); }
+    .btn-full { width: 100%; }
+    .btn-icon { padding: 9px 10px; }
+
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,.25);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    /* ── Divider ─────────────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--border-1);
+      margin: 16px 0;
+    }
+
+    /* ── ─ TRANSLATE PANEL ─────────────────────────────────────────── */
+    .translate-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    .pivot-arrow {
+      text-align: center;
+      padding: 10px 0;
+      color: var(--text-4);
+      font-size: 20px;
+    }
+    .translate-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .result-box {
+      background: var(--bg-3);
+      border: 1px solid var(--border-1);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      min-height: 120px;
+      position: relative;
+    }
+    .result-box.empty { color: var(--text-4); font-style: italic; }
+    .result-text { line-height: 1.7; color: var(--text-1); }
+    .pivot-chain {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .pivot-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .pivot-step-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      min-width: 60px;
+      padding-top: 2px;
+    }
+    .pivot-step-text {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-1);
+      flex: 1;
+    }
+    .pivot-step-arrow {
+      color: var(--indigo);
+      font-size: 18px;
+      line-height: 1;
+      margin-top: 2px;
+    }
+    .result-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .error-box {
+      background: var(--red-dim);
+      border: 1px solid rgba(248,113,113,.25);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      color: var(--red);
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    /* ── EVALUATE PANEL ──────────────────────────────────────────── */
+    .eval-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 16px;
+      align-items: start;
+    }
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .metric-card {
+      background: var(--bg-3);
+      border: 1px solid var(--border-1);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      text-align: center;
+    }
+    .metric-name { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-3); }
+    .metric-value { font-size: 28px; font-weight: 700; margin: 6px 0 4px; font-variant-numeric: tabular-nums; }
+    .metric-bar { height: 4px; border-radius: 2px; background: var(--bg-4); overflow: hidden; margin-top: 6px; }
+    .metric-bar-fill { height: 100%; border-radius: 2px; transition: width .6s ease; }
+    .metric-card.bleu   .metric-value { color: var(--indigo-light); }
+    .metric-card.bleu   .metric-bar-fill { background: var(--indigo); }
+    .metric-card.chrf   .metric-value { color: var(--cyan); }
+    .metric-card.chrf   .metric-bar-fill { background: var(--cyan); }
+    .metric-card.bertp  .metric-value { color: var(--violet); }
+    .metric-card.bertp  .metric-bar-fill { background: var(--violet); }
+    .metric-card.bertf  .metric-value { color: var(--green); }
+    .metric-card.bertf  .metric-bar-fill { background: var(--green); }
+    .metric-card.bertr  .metric-value { color: var(--amber); }
+    .metric-card.bertr  .metric-bar-fill { background: var(--amber); }
+    .metric-card.span-2 { grid-column: 1 / -1; }
+    .bertscore-row { display: flex; gap: 10px; }
+    .bertscore-cell { flex: 1; text-align: center; }
+    .bertscore-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); }
+    .bertscore-val { font-size: 20px; font-weight: 700; margin-top: 4px; }
+
+    /* ── DATASET PANEL ───────────────────────────────────────────── */
+    .dataset-layout {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 16px;
+      align-items: start;
+    }
+    .source-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .source-card {
+      background: var(--bg-3);
+      border: 1px solid var(--border-1);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+    }
+    .source-name { font-size: 12px; font-weight: 600; color: var(--text-1); margin-bottom: 4px; }
+    .source-desc { font-size: 11px; color: var(--text-3); line-height: 1.5; }
+    .source-link { font-size: 11px; color: var(--indigo-light); text-decoration: none; display: inline-block; margin-top: 6px; }
+    .source-link:hover { text-decoration: underline; }
+    .chart-wrapper { position: relative; height: 200px; margin-top: 12px; }
+
+    /* ── QUADRUPLETS PANEL ───────────────────────────────────────── */
+    .qsearch-row {
+      display: flex; gap: 10px; align-items: center;
+      margin-bottom: 14px;
+    }
+    .qsearch-row input { flex: 1; }
+    .q-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 12px;
+    }
+    .q-card {
+      background: var(--bg-2);
+      border: 1px solid var(--border-1);
+      border-radius: var(--radius);
+      padding: 14px;
+      transition: border-color var(--transition);
+    }
+    .q-card:hover { border-color: var(--border-2); }
+    .q-idx { font-size: 10px; font-weight: 700; color: var(--text-4); letter-spacing: .06em; margin-bottom: 8px; }
+    .q-lang-row { display: flex; flex-direction: column; gap: 7px; }
+    .q-lang-item { display: flex; gap: 8px; align-items: flex-start; }
+    .q-lang-label {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
+      min-width: 28px; padding-top: 2px;
+    }
+    .q-lang-en { color: var(--cyan); }
+    .q-lang-mr { color: var(--indigo-light); }
+    .q-lang-kn { color: var(--violet); }
+    .q-lang-hi { color: var(--amber); }
+    .q-lang-text { font-size: 12px; line-height: 1.55; color: var(--text-2); flex: 1; }
+    .q-lang-text.empty { color: var(--text-4); font-style: italic; }
+    .pagination {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; margin-top: 20px;
+    }
+    .page-info { font-size: 12px; color: var(--text-3); }
+    .q-empty {
+      text-align: center; padding: 48px 20px;
+      color: var(--text-3); font-size: 14px;
+    }
+    .q-empty .q-empty-icon { font-size: 36px; margin-bottom: 10px; }
+
+    /* ── MODELS PANEL ────────────────────────────────────────────── */
+    .models-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    .pipeline-diagram {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 10px;
+    }
+    .pipe-node {
+      background: var(--bg-3);
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .pipe-node-icon { font-size: 18px; }
+    .pipe-node-text { line-height: 1; }
+    .pipe-node-title { font-size: 13px; font-weight: 600; color: var(--text-1); }
+    .pipe-node-sub { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+    .pipe-arrow {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; padding: 4px 0;
+      color: var(--indigo);
+    }
+    .pipe-arrow-line {
+      flex: 1; height: 1px;
+      background: linear-gradient(90deg, var(--border-1), var(--indigo), var(--border-1));
+    }
+    .pipe-arrow-label { font-size: 10px; font-weight: 600; color: var(--indigo-light); letter-spacing: .05em; }
+    .model-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .model-table th {
+      text-align: left; font-size: 10px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--text-3);
+      padding: 8px 12px; border-bottom: 1px solid var(--border-1);
+    }
+    .model-table td {
+      padding: 10px 12px;
+      font-size: 12px; color: var(--text-2);
+      border-bottom: 1px solid var(--border-1);
+      vertical-align: top;
+    }
+    .model-table tr:last-child td { border-bottom: none; }
+    .model-table td:first-child { color: var(--text-1); font-weight: 500; }
+    .model-link { color: var(--indigo-light); text-decoration: none; font-size: 11px; }
+    .model-link:hover { text-decoration: underline; }
+    .device-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--bg-3); border: 1px solid var(--border-2);
+      border-radius: var(--radius-sm);
+      padding: 5px 10px; font-size: 12px; font-weight: 500;
+      color: var(--text-2);
+    }
+
+    /* ── Responsive ──────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .stats-row { grid-template-columns: repeat(3, 1fr); }
+      .translate-layout, .eval-layout, .dataset-layout, .models-layout { grid-template-columns: 1fr; }
+      .topbar-nav { display: none; }
+      .mobile-nav { display: flex; }
+    }
+    @media (max-width: 600px) {
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .q-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ── Topbar ── -->
+  <header class="topbar">
+    <a class="brand" href="#">
+      <div class="brand-icon">⚖️</div>
+      <div class="brand-text">
+        <div class="brand-name">LexBridge</div>
+        <div class="brand-sub">Legal MT Research · EN–MR–KN–HI</div>
+      </div>
+    </a>
+
+    <nav class="topbar-nav">
+      <button class="nav-btn active" data-panel="translate" onclick="switchTab('translate')">
+        <span class="nav-icon">🔁</span> Translate
+      </button>
+      <button class="nav-btn" data-panel="evaluate" onclick="switchTab('evaluate')">
+        <span class="nav-icon">📊</span> Evaluate
+      </button>
+      <button class="nav-btn" data-panel="dataset" onclick="switchTab('dataset')">
+        <span class="nav-icon">🗄️</span> Dataset
+      </button>
+      <button class="nav-btn" data-panel="quadruplets" onclick="switchTab('quadruplets')">
+        <span class="nav-icon">🔡</span> Quadruplets
+      </button>
+      <button class="nav-btn" data-panel="models" onclick="switchTab('models')">
+        <span class="nav-icon">🧠</span> Models
+      </button>
+    </nav>
+
+    <div class="topbar-right">
+      <div id="backend-badge">
+        <span class="dot"></span>
+        <span id="backend-badge-text">Connecting…</span>
+      </div>
+      <button class="icon-btn" title="Refresh stats" onclick="refreshAll()">🔄</button>
+    </div>
+  </header>
+
+  <!-- ── Stats Row ── -->
+  <section class="stats-row" id="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Quadruplets</div>
+      <div class="stat-value loading" id="stat-q">—</div>
+      <div class="stat-sub">EN · MR · KN · HI</div>
+      <div class="stat-bar"><div class="stat-bar-fill" id="bar-q" style="background:var(--indigo);width:0%"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">EN–MR Pairs</div>
+      <div class="stat-value loading" id="stat-mr">—</div>
+      <div class="stat-sub">English ↔ Marathi</div>
+      <div class="stat-bar"><div class="stat-bar-fill" id="bar-mr" style="background:var(--cyan);width:0%"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">EN–KN Pairs</div>
+      <div class="stat-value loading" id="stat-kn">—</div>
+      <div class="stat-sub">English ↔ Kannada</div>
+      <div class="stat-bar"><div class="stat-bar-fill" id="bar-kn" style="background:var(--violet);width:0%"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">EN–HI Pairs</div>
+      <div class="stat-value loading" id="stat-hi">—</div>
+      <div class="stat-sub">English ↔ Hindi</div>
+      <div class="stat-bar"><div class="stat-bar-fill" id="bar-hi" style="background:var(--amber);width:0%"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Glossary Entries</div>
+      <div class="stat-value loading" id="stat-gl">—</div>
+      <div class="stat-sub">Legal terminology</div>
+      <div class="stat-bar"><div class="stat-bar-fill" id="bar-gl" style="background:var(--green);width:0%"></div></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL: TRANSLATE
+  ════════════════════════════════════════════════════════════════ -->
+  <section class="panel active" id="panel-translate">
+    <div class="translate-layout">
+
+      <!-- Input -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">✍️</span> Source Text</div>
+          <span class="tag tag-indigo" id="dir-badge">Marathi → Kannada</span>
+        </div>
+
+        <div class="translate-controls">
+          <div class="form-group">
+            <label class="form-label">Direction</label>
+            <select id="direction" onchange="updateDirBadge()">
+              <option value="mr_to_kn">Marathi → Kannada</option>
+              <option value="kn_to_mr">Kannada → Marathi</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Domain</label>
+            <select id="domain">
+              <option value="legal">⚖️ Legal</option>
+              <option value="general">🌐 General</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Input text</label>
+          <textarea id="translate-input" placeholder="Enter Marathi or Kannada text here…" rows="6"></textarea>
+        </div>
+
+        <div style="margin-top:12px;display:flex;gap:8px;">
+          <button class="btn btn-primary" style="flex:1;" onclick="doTranslate()" id="translate-btn">
+            <span>🔁</span> Translate
+          </button>
+          <button class="btn btn-secondary btn-icon" onclick="clearTranslate()" title="Clear">✕</button>
+        </div>
+      </div>
+
+      <!-- Output -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">📤</span> Translation Result</div>
+          <div id="trans-meta" style="display:none;" class="result-meta"></div>
+        </div>
+
+        <div id="trans-placeholder" style="color:var(--text-4);font-style:italic;padding:20px 0;text-align:center;font-size:13px;">
+          Translation will appear here…
+        </div>
+
+        <div id="trans-result" style="display:none;">
+          <div class="pivot-chain">
+            <div class="pivot-step">
+              <div class="pivot-step-label" id="step-src-lang">Source</div>
+              <div class="pivot-step-text" id="step-src-text"></div>
+            </div>
+            <div class="pivot-step">
+              <div class="pivot-step-arrow">↓</div>
+              <div style="font-size:10px;color:var(--text-4);font-weight:600;letter-spacing:.05em;align-self:center;">via English pivot</div>
+            </div>
+            <div class="pivot-step">
+              <div class="pivot-step-label" style="color:var(--text-3);">English</div>
+              <div class="pivot-step-text" style="color:var(--text-2);font-style:italic;" id="step-en-text"></div>
+            </div>
+            <div class="pivot-step">
+              <div class="pivot-step-arrow">↓</div>
+              <div style="font-size:10px;color:var(--text-4);font-weight:600;letter-spacing:.05em;align-self:center;">legal model</div>
+            </div>
+            <div class="pivot-step">
+              <div class="pivot-step-label" id="step-tgt-lang">Target</div>
+              <div class="pivot-step-text" style="font-size:15px;font-weight:500;" id="step-tgt-text"></div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+          <div class="result-meta" id="trans-meta-row"></div>
+        </div>
+
+        <div id="trans-error" class="error-box" style="display:none;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL: EVALUATE
+  ════════════════════════════════════════════════════════════════ -->
+  <section class="panel" id="panel-evaluate">
+    <div class="eval-layout">
+
+      <!-- Inputs -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">🔬</span> Evaluation Inputs</div>
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label class="form-label">Hypothesis (model output)</label>
+          <textarea id="eval-hypothesis" placeholder="Paste the model's translation here…" rows="5"></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label class="form-label">Reference (ground truth)</label>
+          <textarea id="eval-reference" placeholder="Paste the human reference translation…" rows="5"></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label">Target language</label>
+          <select id="eval-lang">
+            <option value="kn">Kannada (kn)</option>
+            <option value="mr">Marathi (mr)</option>
+            <option value="hi">Hindi (hi)</option>
+            <option value="en">English (en)</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="doEvaluate()" id="eval-btn">
+          <span>📊</span> Compute Metrics
+        </button>
+      </div>
+
+      <!-- Scores -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">📈</span> Metric Scores</div>
+        </div>
+
+        <div id="eval-placeholder" style="color:var(--text-4);font-style:italic;padding:40px 0;text-align:center;font-size:13px;">
+          Scores will appear after evaluation…
+        </div>
+
+        <div id="eval-results" style="display:none;">
+          <div class="metric-grid">
+            <div class="metric-card bleu">
+              <div class="metric-name">BLEU</div>
+              <div class="metric-value" id="m-bleu">—</div>
+              <div style="font-size:11px;color:var(--text-3);">out of 100</div>
+              <div class="metric-bar"><div class="metric-bar-fill" id="mb-bleu" style="width:0%"></div></div>
+            </div>
+            <div class="metric-card chrf">
+              <div class="metric-name">chrF</div>
+              <div class="metric-value" id="m-chrf">—</div>
+              <div style="font-size:11px;color:var(--text-3);">out of 100</div>
+              <div class="metric-bar"><div class="metric-bar-fill" id="mb-chrf" style="width:0%"></div></div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+          <div class="card-title" style="margin-bottom:12px;"><span class="icon">🤗</span> BERTScore</div>
+          <div class="bertscore-row">
+            <div class="bertscore-cell">
+              <div class="bertscore-label" style="color:var(--violet);">Precision</div>
+              <div class="bertscore-val" style="color:var(--violet);" id="m-bertp">—</div>
+            </div>
+            <div class="bertscore-cell">
+              <div class="bertscore-label" style="color:var(--green);">Recall</div>
+              <div class="bertscore-val" style="color:var(--green);" id="m-bertr">—</div>
+            </div>
+            <div class="bertscore-cell">
+              <div class="bertscore-label" style="color:var(--amber);">F1</div>
+              <div class="bertscore-val" style="color:var(--amber);" id="m-bertf">—</div>
+            </div>
+          </div>
+          <div class="metric-bar" style="margin-top:10px;"><div class="metric-bar-fill" id="mb-bertf" style="width:0%;background:var(--amber)"></div></div>
+        </div>
+
+        <div id="eval-error" class="error-box" style="display:none;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL: DATASET
+  ════════════════════════════════════════════════════════════════ -->
+  <section class="panel" id="panel-dataset">
+    <div class="dataset-layout">
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">📊</span> Corpus Size Distribution</div>
+        </div>
+        <div class="chart-wrapper"><canvas id="corpus-chart"></canvas></div>
+
+        <div class="divider"></div>
+        <div class="card-title" style="margin-bottom:10px;"><span class="icon">🔬</span> Research Questions</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="color:var(--indigo);font-size:16px;margin-top:1px;">→</span>
+            <span style="font-size:12px;color:var(--text-2);line-height:1.5;">Does <strong style="color:var(--text-1);">quadruplet alignment</strong> improve cross-lingual embedding coherence over triplet?</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="color:var(--cyan);font-size:16px;margin-top:1px;">→</span>
+            <span style="font-size:12px;color:var(--text-2);line-height:1.5;">Does adding <strong style="color:var(--text-1);">Hindi</strong> reduce English structural bias in multilingual models?</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="color:var(--violet);font-size:16px;margin-top:1px;">→</span>
+            <span style="font-size:12px;color:var(--text-2);line-height:1.5;">Is <strong style="color:var(--text-1);">back-translation consistency</strong> a reliable small-scale proxy metric?</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">🗂️</span> Data Sources</div>
+          </div>
+          <div class="source-grid">
+            <div class="source-card">
+              <div class="source-name">Samanantar</div>
+              <div class="source-desc">AI4Bharat large-scale EN↔Indic parallel corpus. Covers MR, KN, HI and 19 more languages.</div>
+              <a class="source-link" href="https://huggingface.co/datasets/ai4bharat/samanantar" target="_blank">↗ HuggingFace</a>
+            </div>
+            <div class="source-card">
+              <div class="source-name">MILPaC</div>
+              <div class="source-desc">Multi-Indic Legal Parallel Corpus. Supreme Court of India judgements in EN, MR, HI.</div>
+              <a class="source-link" href="https://github.com/Law-AI/MILPaC" target="_blank">↗ GitHub</a>
+            </div>
+            <div class="source-card">
+              <div class="source-name">Futurebee EN-KN</div>
+              <div class="source-desc">Legal domain English–Kannada parallel corpus. Requires manual download.</div>
+              <a class="source-link" href="https://www.futurebeeai.com/dataset/parallel-corpora/kannada-english-translated-parallel-corpus-for-legal-domain" target="_blank">↗ Futurebee AI</a>
+            </div>
+            <div class="source-card">
+              <div class="source-name">AIKosh KN-MR</div>
+              <div class="source-desc">India AI benchmark dataset for Kannada↔Marathi translation. Requires manual download.</div>
+              <a class="source-link" href="https://aikosh.indiaai.gov.in" target="_blank">↗ AIKosh</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">⚙️</span> Pipeline Architecture</div>
+          </div>
+          <div style="font-size:12px;color:var(--text-2);line-height:1.7;">
+            <div style="margin-bottom:6px;">Translation route: <span class="tag tag-indigo">Marathi → English → Kannada</span></div>
+            <div style="display:flex;flex-direction:column;gap:3px;">
+              <div>1. <strong style="color:var(--text-1);">IndicTrans2 1B</strong> — Indic → English (all 22 languages)</div>
+              <div>2. <strong style="color:var(--text-1);">InLegalTrans 1B</strong> — English → Indic (legal fine-tuned)</div>
+              <div>3. Evaluation: <strong style="color:var(--text-1);">BLEU · chrF · BERTScore</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL: QUADRUPLETS
+  ════════════════════════════════════════════════════════════════ -->
+  <section class="panel" id="panel-quadruplets">
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-header" style="margin-bottom:0;">
+        <div class="card-title"><span class="icon">🔡</span> Sentence Quadruplets Browser</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="q-total-badge" class="tag tag-indigo">0 entries</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="qsearch-row">
+      <input type="text" id="q-search" placeholder="Search across all languages…" oninput="debounceSearch()" />
+      <button class="btn btn-secondary" onclick="loadQuadruplets(0, document.getElementById('q-search').value)">Search</button>
+    </div>
+
+    <div id="q-grid" class="q-grid"></div>
+    <div id="q-empty" class="q-empty" style="display:none;">
+      <div class="q-empty-icon">🔍</div>
+      <div>No quadruplets found. Run the data pipeline first.</div>
+      <div style="font-size:12px;margin-top:6px;color:var(--text-4);">python data/build_quadruplets.py</div>
+    </div>
+
+    <div class="pagination" id="q-pagination"></div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL: MODELS
+  ════════════════════════════════════════════════════════════════ -->
+  <section class="panel" id="panel-models">
+    <div class="models-layout">
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">🔀</span> Translation Pipeline</div>
+        </div>
+        <div class="pipeline-diagram">
+          <div class="pipe-node">
+            <div class="pipe-node-icon">📝</div>
+            <div class="pipe-node-text">
+              <div class="pipe-node-title">Source Input</div>
+              <div class="pipe-node-sub">Marathi (mar_Deva) or Kannada (kan_Knda)</div>
+            </div>
+          </div>
+          <div class="pipe-arrow">
+            <div class="pipe-arrow-line"></div>
+            <div class="pipe-arrow-label">Indic → English</div>
+            <div class="pipe-arrow-line"></div>
+          </div>
+          <div class="pipe-node" style="border-color:var(--indigo);background:var(--indigo-dim);">
+            <div class="pipe-node-icon">🤖</div>
+            <div class="pipe-node-text">
+              <div class="pipe-node-title" style="color:var(--indigo-light);">IndicTrans2 1B</div>
+              <div class="pipe-node-sub">ai4bharat/indictrans2-indic-en-1B</div>
+            </div>
+          </div>
+          <div class="pipe-arrow">
+            <div class="pipe-arrow-line"></div>
+            <div class="pipe-arrow-label">English Pivot</div>
+            <div class="pipe-arrow-line"></div>
+          </div>
+          <div class="pipe-node" style="border-color:rgba(34,211,238,.3);background:var(--cyan-dim);">
+            <div class="pipe-node-icon">⚖️</div>
+            <div class="pipe-node-text">
+              <div class="pipe-node-title" style="color:var(--cyan);">InLegalTrans 1B</div>
+              <div class="pipe-node-sub">law-ai/InLegalTrans-En2Indic-1B (legal fine-tuned)</div>
+            </div>
+          </div>
+          <div class="pipe-arrow">
+            <div class="pipe-arrow-line"></div>
+            <div class="pipe-arrow-label">English → Indic</div>
+            <div class="pipe-arrow-line"></div>
+          </div>
+          <div class="pipe-node">
+            <div class="pipe-node-icon">🎯</div>
+            <div class="pipe-node-text">
+              <div class="pipe-node-title">Target Output</div>
+              <div class="pipe-node-sub">Kannada (kan_Knda) or Marathi (mar_Deva)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">📟</span> Runtime Status</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;" id="runtime-status">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--text-2);">Backend</span>
+              <span id="rt-backend" class="tag tag-red">Offline</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--text-2);">Models loaded</span>
+              <span id="rt-models" class="tag tag-amber">Unknown</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--text-2);">Device</span>
+              <span id="rt-device" class="device-badge">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--text-2);">Mode</span>
+              <span id="rt-mode" class="tag tag-amber">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">📦</span> Model Registry</div>
+          </div>
+          <table class="model-table">
+            <thead>
+              <tr><th>Model</th><th>Role</th><th>Size</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  IndicTrans2<br>
+                  <a class="model-link" href="https://huggingface.co/ai4bharat/indictrans2-indic-en-1B" target="_blank">↗ indictrans2-indic-en-1B</a>
+                </td>
+                <td>Indic → English</td>
+                <td><span class="tag tag-violet">1B</span></td>
+              </tr>
+              <tr>
+                <td>
+                  IndicTrans2<br>
+                  <a class="model-link" href="https://huggingface.co/ai4bharat/indictrans2-en-indic-1B" target="_blank">↗ indictrans2-en-indic-1B</a>
+                </td>
+                <td>English → Indic</td>
+                <td><span class="tag tag-violet">1B</span></td>
+              </tr>
+              <tr>
+                <td>
+                  InLegalTrans<br>
+                  <a class="model-link" href="https://huggingface.co/law-ai/InLegalTrans-En2Indic-1B" target="_blank">↗ InLegalTrans-En2Indic-1B</a>
+                </td>
+                <td>EN → Indic (Legal)</td>
+                <td><span class="tag tag-cyan">1B</span></td>
+              </tr>
+              <tr>
+                <td>
+                  InLegalBERT<br>
+                  <a class="model-link" href="https://huggingface.co/law-ai/InLegalBERT" target="_blank">↗ InLegalBERT</a>
+                </td>
+                <td>Legal embeddings</td>
+                <td><span class="tag tag-green">110M</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- .page -->
+
+<script>
+const API = 'http://localhost:8000';
+const PAGE_SIZE = 20;
+
+let corpusChart = null;
+let qCurrentPage = 0;
+let qSearchDebounce = null;
+
+/* ── Utilities ─────────────────────────────────── */
+function fmt(n) {
+  if (n === null || n === undefined || n === '') return '—';
+  return Number(n).toLocaleString();
+}
+function fmtScore(n) {
+  if (n === null || n === undefined || n === '') return '—';
+  return Number(n).toFixed(2);
+}
+async function apiFetch(path, opts = {}) {
+  const r = await fetch(API + path, { signal: AbortSignal.timeout(12000), ...opts });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+/* ── Backend status ────────────────────────────── */
+async function checkBackend() {
+  const badge = document.getElementById('backend-badge');
+  const text  = document.getElementById('backend-badge-text');
+  try {
+    await apiFetch('/');
+    badge.className = 'online';
+    text.textContent = 'Backend online';
+    document.getElementById('rt-backend').className = 'tag tag-green';
+    document.getElementById('rt-backend').textContent = 'Online';
+    return true;
+  } catch {
+    badge.className = 'offline';
+    text.textContent = 'Backend offline';
+    document.getElementById('rt-backend').className = 'tag tag-red';
+    document.getElementById('rt-backend').textContent = 'Offline';
+    return false;
+  }
+}
+
+/* ── Stats ─────────────────────────────────────── */
+async function loadStats() {
+  try {
+    const d = await apiFetch('/dataset_stats');
+    const max = Math.max(d.en_mr_legal_pairs||0, d.en_kn_legal_pairs||0, d.en_hi_legal_pairs||0, 1);
+
+    setText('stat-q',  fmt(d.quadruplets_count));
+    setText('stat-mr', fmt(d.en_mr_legal_pairs));
+    setText('stat-kn', fmt(d.en_kn_legal_pairs));
+    setText('stat-hi', fmt(d.en_hi_legal_pairs));
+    setText('stat-gl', fmt(d.glossary_entries));
+
+    ['stat-q','stat-mr','stat-kn','stat-hi','stat-gl'].forEach(id =>
+      document.getElementById(id).classList.remove('loading')
+    );
+
+    setWidth('bar-q',  Math.round((d.quadruplets_count||0) / max * 100));
+    setWidth('bar-mr', Math.round((d.en_mr_legal_pairs||0) / max * 100));
+    setWidth('bar-kn', Math.round((d.en_kn_legal_pairs||0) / max * 100));
+    setWidth('bar-hi', Math.round((d.en_hi_legal_pairs||0) / max * 100));
+    setWidth('bar-gl', Math.min(100, Math.round((d.glossary_entries||0) / 500 * 100)));
+
+    updateChart(d);
+  } catch(e) {
+    ['stat-q','stat-mr','stat-kn','stat-hi','stat-gl'].forEach(id => {
+      const el = document.getElementById(id);
+      el.textContent = '—'; el.classList.remove('loading');
+    });
+  }
+}
+
+async function loadModelInfo() {
+  try {
+    const d = await apiFetch('/model_info');
+    const ready = d.models_ready;
+    document.getElementById('rt-models').className = ready ? 'tag tag-green' : 'tag tag-amber';
+    document.getElementById('rt-models').textContent = ready ? 'Loaded' : 'Mock mode';
+    document.getElementById('rt-device').textContent = d.device || '—';
+    document.getElementById('rt-mode').className = ready ? 'tag tag-green' : 'tag tag-amber';
+    document.getElementById('rt-mode').textContent = ready ? 'Live' : 'Mock';
+  } catch {}
+}
+
+function setText(id, val) { document.getElementById(id).textContent = val; }
+function setWidth(id, pct) { document.getElementById(id).style.width = pct + '%'; }
+
+/* ── Chart ──────────────────────────────────────── */
+function updateChart(d) {
+  const ctx = document.getElementById('corpus-chart');
+  if (!ctx) return;
+  const labels = ['EN–MR', 'EN–KN', 'EN–HI', 'Quadruplets'];
+  const vals   = [d.en_mr_legal_pairs||0, d.en_kn_legal_pairs||0,
+                   d.en_hi_legal_pairs||0, d.quadruplets_count||0];
+  const colors = ['rgba(34,211,238,.7)', 'rgba(167,139,250,.7)',
+                   'rgba(251,191,36,.7)', 'rgba(99,102,241,.7)'];
+  const borders= ['rgb(34,211,238)', 'rgb(167,139,250)',
+                   'rgb(251,191,36)', 'rgb(99,102,241)'];
+
+  if (corpusChart) { corpusChart.destroy(); }
+  corpusChart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ data: vals, backgroundColor: colors,
+      borderColor: borders, borderWidth: 1, borderRadius: 6 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.y.toLocaleString() + ' pairs' } } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,.04)' },
+             ticks: { color: '#8b95b8', font: { family: 'Inter', size: 11 } } },
+        y: { grid: { color: 'rgba(255,255,255,.04)' },
+             ticks: { color: '#8b95b8', font: { family: 'Inter', size: 11 },
+               callback: v => v >= 1000 ? (v/1000).toFixed(0)+'k' : v } }
+      }
+    }
+  });
+}
+
+/* ── Translate ──────────────────────────────────── */
+function updateDirBadge() {
+  const dir = document.getElementById('direction').value;
+  document.getElementById('dir-badge').textContent =
+    dir === 'mr_to_kn' ? 'Marathi → Kannada' : 'Kannada → Marathi';
+}
+
+async function doTranslate() {
+  const text = document.getElementById('translate-input').value.trim();
+  if (!text) return;
+  const direction = document.getElementById('direction').value;
+  const domain    = document.getElementById('domain').value;
+
+  const btn = document.getElementById('translate-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Translating…';
+  document.getElementById('trans-placeholder').style.display = 'none';
+  document.getElementById('trans-result').style.display = 'none';
+  document.getElementById('trans-error').style.display = 'none';
+
+  try {
+    const data = await apiFetch('/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, direction, domain })
+    });
+
+    const srcLang = direction === 'mr_to_kn' ? 'Marathi' : 'Kannada';
+    const tgtLang = direction === 'mr_to_kn' ? 'Kannada' : 'Marathi';
+
+    setText('step-src-lang', srcLang);
+    setText('step-src-text', data.source_text);
+    setText('step-en-text',  data.intermediate_english || '(not available)');
+    setText('step-tgt-lang', tgtLang);
+    setText('step-tgt-text', data.target_text);
+
+    const metaRow = document.getElementById('trans-meta-row');
+    metaRow.innerHTML = `
+      <span class="tag ${data.model_mode === 'live' ? 'tag-green' : 'tag-amber'}">${data.model_mode === 'live' ? '🟢 Live' : '🔶 Mock'}</span>
+      <span class="tag tag-cyan">${data.domain}</span>
+      ${data.latency_ms ? `<span class="tag tag-indigo">⏱ ${data.latency_ms} ms</span>` : ''}
+    `;
+
+    document.getElementById('trans-result').style.display = 'block';
+  } catch(e) {
+    const errEl = document.getElementById('trans-error');
+    errEl.textContent = '⚠ Translation failed: ' + (e.message || 'Backend unreachable. Make sure the server is running.');
+    errEl.style.display = 'block';
+    document.getElementById('trans-placeholder').style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>🔁</span> Translate';
+  }
+}
+
+function clearTranslate() {
+  document.getElementById('translate-input').value = '';
+  document.getElementById('trans-result').style.display = 'none';
+  document.getElementById('trans-error').style.display = 'none';
+  document.getElementById('trans-placeholder').style.display = 'block';
+}
+
+/* ── Evaluate ───────────────────────────────────── */
+async function doEvaluate() {
+  const hypothesis = document.getElementById('eval-hypothesis').value.trim();
+  const reference  = document.getElementById('eval-reference').value.trim();
+  const lang       = document.getElementById('eval-lang').value;
+  if (!hypothesis || !reference) return;
+
+  const btn = document.getElementById('eval-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Computing…';
+  document.getElementById('eval-placeholder').style.display = 'none';
+  document.getElementById('eval-results').style.display = 'none';
+  document.getElementById('eval-error').style.display = 'none';
+
+  try {
+    const d = await apiFetch('/evaluate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hypothesis, reference, lang })
+    });
+
+    setText('m-bleu',  fmtScore(d.bleu));
+    setText('m-chrf',  fmtScore(d.chrf));
+    setText('m-bertp', fmtScore(d.bertscore?.precision));
+    setText('m-bertr', fmtScore(d.bertscore?.recall));
+    setText('m-bertf', fmtScore(d.bertscore?.f1));
+
+    setWidth('mb-bleu',  Math.min(100, (d.bleu || 0)));
+    setWidth('mb-chrf',  Math.min(100, (d.chrf || 0)));
+    setWidth('mb-bertf', Math.min(100, ((d.bertscore?.f1 || 0) * 100)));
+
+    document.getElementById('eval-results').style.display = 'block';
+  } catch(e) {
+    const errEl = document.getElementById('eval-error');
+    errEl.textContent = '⚠ Evaluation failed: ' + (e.message || 'Backend unreachable.');
+    errEl.style.display = 'block';
+    document.getElementById('eval-placeholder').style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>📊</span> Compute Metrics';
+  }
+}
+
+/* ── Quadruplets ─────────────────────────────────── */
+async function loadQuadruplets(page = 0, search = '') {
+  qCurrentPage = page;
+  const grid = document.getElementById('q-grid');
+  const empty = document.getElementById('q-empty');
+  grid.innerHTML = '<div style="color:var(--text-4);padding:20px;text-align:center;">Loading…</div>';
+  empty.style.display = 'none';
+
+  try {
+    const params = new URLSearchParams({ page, page_size: PAGE_SIZE });
+    if (search) params.set('search', search);
+    const d = await apiFetch(`/quadruplets?${params}`);
+
+    document.getElementById('q-total-badge').textContent =
+      (d.total || 0).toLocaleString() + ' entries';
+
+    if (!d.quadruplets || d.quadruplets.length === 0) {
+      grid.innerHTML = '';
+      empty.style.display = 'block';
+      renderPagination(0, 0);
+      return;
+    }
+
+    grid.innerHTML = d.quadruplets.map((q, i) => {
+      const idx = page * PAGE_SIZE + i;
+      const hasHindi = q.hindi && q.hindi.trim();
+      return `
+        <div class="q-card">
+          <div class="q-idx">QUADRUPLET #${idx + 1} ${hasHindi ? '' : '<span class="tag tag-amber" style="font-size:9px;padding:1px 5px;">no Hindi</span>'}</div>
+          <div class="q-lang-row">
+            <div class="q-lang-item">
+              <span class="q-lang-label q-lang-en">EN</span>
+              <span class="q-lang-text">${esc(q.english)}</span>
+            </div>
+            <div class="q-lang-item">
+              <span class="q-lang-label q-lang-mr">MR</span>
+              <span class="q-lang-text">${esc(q.marathi)}</span>
+            </div>
+            <div class="q-lang-item">
+              <span class="q-lang-label q-lang-kn">KN</span>
+              <span class="q-lang-text">${esc(q.kannada)}</span>
+            </div>
+            <div class="q-lang-item">
+              <span class="q-lang-label q-lang-hi">HI</span>
+              <span class="q-lang-text ${hasHindi ? '' : 'empty'}">${hasHindi ? esc(q.hindi) : 'not available'}</span>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    renderPagination(page, d.pages || 1);
+  } catch(e) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    empty.querySelector('div:last-child').textContent = 'Backend offline or quadruplets not built yet.';
+  }
+}
+
+function renderPagination(current, total) {
+  const pag = document.getElementById('q-pagination');
+  if (total <= 1) { pag.innerHTML = ''; return; }
+  const search = document.getElementById('q-search').value;
+  let html = `<button class="btn btn-secondary" ${current === 0 ? 'disabled' : ''} onclick="loadQuadruplets(${current-1},'${esc(search)}')">← Prev</button>`;
+  html += `<span class="page-info">Page ${current + 1} of ${total}</span>`;
+  html += `<button class="btn btn-secondary" ${current >= total-1 ? 'disabled' : ''} onclick="loadQuadruplets(${current+1},'${esc(search)}')">Next →</button>`;
+  pag.innerHTML = html;
+}
+
+function debounceSearch() {
+  clearTimeout(qSearchDebounce);
+  qSearchDebounce = setTimeout(() => {
+    loadQuadruplets(0, document.getElementById('q-search').value);
+  }, 400);
+}
+
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── Tab switching ──────────────────────────────── */
+function switchTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.querySelector(`[data-panel="${name}"]`).classList.add('active');
+
+  if (name === 'quadruplets' && document.getElementById('q-grid').innerHTML === '') {
+    loadQuadruplets(0);
+  }
+}
+
+/* ── Full refresh ───────────────────────────────── */
+async function refreshAll() {
+  await checkBackend();
+  await Promise.all([loadStats(), loadModelInfo()]);
+}
+
+/* ── Init ───────────────────────────────────────── */
+async function init() {
+  await refreshAll();
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

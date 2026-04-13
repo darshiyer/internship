@@ -1,0 +1,29 @@
+{
+  "mr_to_kn_pivot": {
+    "corpus_bleu": 2.774908463173115,
+    "corpus_chrf": 32.501033769564934,
+    "bertscore_f1": 0.7865,
+    "n": 100,
+    "time_seconds": 26.9
+  },
+  "kn_to_mr_pivot": {
+    "corpus_bleu": 7.438070428924344,
+    "corpus_chrf": 32.410972199119506,
+    "bertscore_f1": 0.7855,
+    "n": 100,
+    "time_seconds": 21.3
+  },
+  "round_trip_en_mr_en": {
+    "cosine_similarity": 0.8979,
+    "n": 100,
+    "time_seconds": 27.4,
+    "interpretation": "Higher = more meaning preserved"
+  },
+  "en_to_kn_direct": {
+    "corpus_bleu": 3.0361874828580087,
+    "corpus_chrf": 36.224229978207326,
+    "bertscore_f1": 0.8076,
+    "n": 100,
+    "time_seconds": 12.1
+  }
+}

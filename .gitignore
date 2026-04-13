@@ -1,0 +1,59 @@
+# ── Virtual environments ───────────────────────────────────────────────────────
+.venv/
+.venv312/
+venv/
+env/
+
+# ── Python cache ───────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# ── Raw datasets (large, re-downloadable via download_datasets.py) ─────────────
+data/raw/samanantar_*/
+data/raw/milpac/
+data/raw/legislative_gov_in/
+data/raw/indian_kanoon/
+
+# ── Large processed data files ─────────────────────────────────────────────────
+data/processed/quadruplets.json
+data/processed/*.tsv
+experiments/results/splits/
+
+# ── Trained model weights (large binary files) ─────────────────────────────────
+experiments/results/models/
+
+# ── Logs and runtime files ─────────────────────────────────────────────────────
+scrape_log.txt
+scrape_pid.txt
+nohup.out
+*.log
+
+# ── macOS ──────────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ── Jupyter checkpoints ────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── Node modules (frontend) ────────────────────────────────────────────────────
+node_modules/
+frontend/.next/
+frontend/out/
+
+# ── Environment variables ──────────────────────────────────────────────────────
+.env
+.env.local
+.env.*
+
+# ── Editor ─────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
