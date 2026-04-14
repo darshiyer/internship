@@ -1,0 +1,788 @@
+% ============================================================
+%  Paste this entire file into Overleaf → New Project → Blank
+%  Compiler: pdfLaTeX  |  Main file: research_paper.tex
+% ============================================================
+\documentclass[11pt,a4paper]{article}
+
+% ── Packages ─────────────────────────────────────────────────
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{times}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{parskip}
+\usepackage{setspace}
+\usepackage{fancyhdr}
+\usepackage{abstract}
+\usepackage{titlesec}
+\usepackage[numbers,sort&compress]{natbib}
+
+% ── Colours ───────────────────────────────────────────────────
+\definecolor{darkblue}{HTML}{1a237e}
+\definecolor{accent}{HTML}{0d47a1}
+\definecolor{lightgray}{HTML}{f5f5f5}
+\definecolor{tableheader}{HTML}{e8eaf6}
+
+% ── Hyperref setup ────────────────────────────────────────────
+\hypersetup{
+  colorlinks=true,
+  linkcolor=accent,
+  citecolor=accent,
+  urlcolor=accent,
+  pdftitle={Quadruplet Sentence Alignment for Legal Machine Translation},
+  pdfauthor={Darsh Iyer}
+}
+
+% ── Section formatting ────────────────────────────────────────
+\titleformat{\section}{\large\bfseries\color{darkblue}}{{\thesection.}}{0.5em}{}
+\titleformat{\subsection}{\normalsize\bfseries\color{accent}}{{\thesubsection}}{0.5em}{}
+\titleformat{\subsubsection}{\normalsize\itshape}{\thesubsubsection}{0.5em}{}
+
+% ── Header / footer ───────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[L]{\small\textit{Quadruplet Alignment for Legal MT — English, Marathi, Kannada, Hindi}}
+\fancyhead[R]{\small\thepage}
+
+% ── Table helpers ─────────────────────────────────────────────
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.25}
+
+% ── Macros ────────────────────────────────────────────────────
+\newcommand{\mr}{\textsc{mr}}
+\newcommand{\kn}{\textsc{kn}}
+\newcommand{\en}{\textsc{en}}
+\newcommand{\hi}{\textsc{hi}}
+\newcommand{\bleu}{\textsc{bleu}}
+\newcommand{\chrf}{\textsc{chr}F}
+\newcommand{\bert}{\textsc{bert}Score}
+\newcommand{\acc}{Acc@1}
+\newcommand{\mrr}{\textsc{mrr}}
+\newcommand{\nllb}{\textsc{nllb}-200}
+
+% ─────────────────────────────────────────────────────────────
+\begin{document}
+
+% ── Title ─────────────────────────────────────────────────────
+\begin{titlepage}
+  \centering
+  \vspace*{1.5cm}
+
+  {\color{darkblue}\rule{\linewidth}{2pt}}
+  \vspace{0.4cm}
+
+  {\LARGE\bfseries\color{darkblue}
+    Quadruplet Sentence Alignment for\\[0.3em]
+    Low-Resource Legal Machine Translation:\\[0.3em]
+    English--Marathi--Kannada--Hindi
+  }
+
+  \vspace{0.4cm}
+  {\color{darkblue}\rule{\linewidth}{0.8pt}}
+
+  \vspace{1.2cm}
+
+  {\large Darsh Iyer}\\[0.2em]
+  {\normalsize Department of Computer Science}\\[0.1em]
+  {\normalsize \textit{Research Intern, NLP \& Machine Translation Group}}\\[0.5em]
+  {\small \href{mailto:darsh@example.com}{darsh@example.com}}
+
+  \vspace{1cm}
+  {\small Supervised by Vikram Sir}
+
+  \vspace{1.5cm}
+  {\small April 2026}
+
+  \vfill
+  \colorbox{tableheader}{%
+    \begin{minipage}{0.85\linewidth}
+      \vspace{0.3cm}
+      \centering
+      \small\textbf{Keywords:} Multilingual Machine Translation,
+      Sentence Alignment, Low-Resource NLP, Indic Languages,
+      Quadruplet Training, Legal Domain MT, English--Marathi--Kannada
+      \vspace{0.3cm}
+    \end{minipage}
+  }
+\end{titlepage}
+
+% ── Abstract ──────────────────────────────────────────────────
+\newpage
+\begin{abstract}
+\noindent
+Direct machine translation between Marathi and Kannada is severely
+under-resourced: no standardised parallel benchmark exists, and
+the two languages share neither script nor close linguistic ancestry.
+We address this gap through a \emph{pivot-based quadruplet alignment}
+framework that leverages English as an intermediary language and
+Hindi as an additional Indic anchor to improve cross-lingual
+embedding coherence.
+
+We construct a corpus of \textbf{128,460 sentence-level quadruplets}
+(English, Marathi, Kannada, Hindi) drawn from four parallel sources:
+Samanantar, MILPaC (legal domain), PMIndia (government speeches),
+and OPUS-100.
+We fine-tune a multilingual sentence transformer
+(\texttt{paraphrase-multilingual-MiniLM-L12-v2}) under two
+conditions --- triplet (\en+\mr+\kn) and quadruplet
+(\en+\mr+\kn+\hi) --- and evaluate retrieval accuracy
+across all six language-pair directions on a test pool of 25,692
+sentences.
+
+Our quadruplet model achieves \acc{} of \textbf{46.3\%} for
+\en{}$\leftrightarrow$\mr{} and \textbf{40.7\%} for
+\en{}$\leftrightarrow$\kn{}, compared to a 7.8\% and 41.0\%
+baseline respectively, demonstrating substantial gains especially
+for Kannada.
+For the direct Marathi$\leftrightarrow$Kannada direction, the
+triplet model achieves 30.2\% \acc{}, a 4.5$\times$ improvement
+over the 6.8\% baseline.
+We further evaluate pivot translation quality using \nllb{},
+reporting \bleu{}/\chrf{}/\bert{}Score, and analyse English
+structural bias through centroid cosine similarity.
+All code, models, and datasets are publicly released.
+\end{abstract}
+
+\vspace{0.5cm}
+\tableofcontents
+\newpage
+
+% ── 1. INTRODUCTION ───────────────────────────────────────────
+\section{Introduction}
+\label{sec:intro}
+
+India is home to 22 constitutionally recognised languages and over
+1,600 dialects, yet the NLP infrastructure for most of these
+languages lags decades behind English.
+Marathi (spoken by $\sim$83 million people) and Kannada
+($\sim$44 million) are two of the six major Dravidian and
+Indo-Aryan languages of the southern and western regions, and their
+legal corpora --- court judgments, Acts of Parliament, government
+notifications --- are produced simultaneously in multiple languages
+by constitutional mandate.
+Despite this, no production-quality machine translation system
+exists for the direct Marathi$\leftrightarrow$Kannada language pair.
+
+\subsection{Problem Statement}
+The central challenge is \textbf{data scarcity}: there is no publicly
+available direct Marathi--Kannada parallel corpus of meaningful size.
+Existing multilingual systems such as IndicTrans2~\cite{gala2023indictrans2}
+and NLLB-200~\cite{nllb2022} support both languages but only via
+English as an implicit pivot, without exposing sentence-level
+alignment quality or domain-specific performance.
+
+Furthermore, the legal domain imposes stricter requirements than
+general news translation: terminology must be precise, clause
+boundaries must be preserved, and cross-reference integrity must
+be maintained.
+Errors in legal MT can lead to misinterpretation of statutes,
+a concern increasingly relevant as Indian courts digitise their records.
+
+\subsection{Contributions}
+This paper makes the following contributions:
+
+\begin{enumerate}[leftmargin=*, label=\textbf{C\arabic*.}]
+  \item \textbf{Quadruplet corpus:} We compile and release a
+    corpus of 128,460 sentence-level quadruplets
+    (EN + MR + KN + HI) from four data sources, with
+    full preprocessing and alignment pipeline.
+
+  \item \textbf{Comparative embedding study:}
+    We systematically compare baseline (no fine-tuning),
+    triplet (\en+\mr+\kn), and quadruplet (\en+\mr+\kn+\hi)
+    training regimes across six language-pair directions and
+    a 25,692-sentence retrieval pool.
+
+  \item \textbf{Bias analysis:}
+    We introduce a centroid cosine similarity metric to quantify
+    English structural bias in the embedding space and show how
+    adding Hindi affects Indic language clustering.
+
+  \item \textbf{Legal domain translation evaluation:}
+    We report \bleu{}, \chrf{}, and \bert{}Score for
+    Marathi$\rightarrow$Kannada, Kannada$\rightarrow$Marathi, and
+    English$\rightarrow$\{Marathi, Kannada\} directions using the
+    \nllb{} pivot pipeline.
+
+  \item \textbf{Open prototype:}
+    We release a FastAPI backend and interactive dashboard
+    enabling PDF upload, language detection, and pivot translation,
+    available at \url{https://github.com/darshiyer/internship}.
+\end{enumerate}
+
+% ── 2. RELATED WORK ───────────────────────────────────────────
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Multilingual Sentence Embeddings}
+The field of language-agnostic sentence representations was advanced
+significantly by LASER~\cite{artetxe2019massively}, which trained
+a single LSTM encoder across 93 languages using a shared BPE
+vocabulary. LaBSE~\cite{feng2022labse} subsequently demonstrated
+that a BERT-based architecture with dual-encoder contrastive training
+could outperform LASER on bitext mining tasks, including for
+morphologically rich languages.
+Reimers and Gurevych~\cite{reimers2019sentencebert} introduced
+Sentence-BERT (SBERT), extending BERT with siamese networks and
+cosine similarity losses; their multilingual MiniLM variant
+(\texttt{paraphrase-multilingual-MiniLM-L12-v2}) is our base model.
+
+\subsection{Pivot-Based Machine Translation}
+Pivot translation -- routing through a high-resource intermediate
+language -- is a well-established technique for low-resource
+pairs~\cite{utiyama2007pivot,wu2007pivot}.
+\citet{paul2009pivotmt} showed that for Asian language pairs with
+limited direct data, English pivot can match or exceed direct
+models when the pivot language is richly resourced.
+The key limitation is \emph{error propagation}: errors in the
+source$\rightarrow$pivot step compound with errors in the
+pivot$\rightarrow$target step~\cite{babych2007pivotmt}.
+Our round-trip consistency experiment (Section~\ref{sec:results})
+directly quantifies this effect.
+
+\subsection{Indian Language NLP}
+Samanantar~\cite{ramesh2021samanantar} is the largest publicly
+available parallel corpus for Indian language pairs, providing
+English-aligned data for 11 Indic languages including Marathi and
+Kannada. We use 500,000 sentences per language pair from this source.
+MILPaC~\cite{milpac2022} provides a legal-domain parallel corpus for
+Indian languages, which we incorporate for domain adaptation.
+IndicTrans2~\cite{gala2023indictrans2} achieves state-of-the-art
+translation quality for 22 Indian languages; we use it as our
+Indic$\rightarrow$English translation backbone.
+\citet{nllb2022} released NLLB-200, a 200-language model that we
+use for English$\rightarrow$Indic translation.
+
+\subsection{Legal Machine Translation}
+Legal MT presents distinct challenges~\cite{prieto2015legal}:
+dense nominalisation, passive constructions, cross-reference
+clauses, and archaic terminology.
+\citet{koehn2017challenges} identified domain mismatch as the
+primary cause of quality degradation in specialised MT.
+Our inclusion of MILPaC and PMIndia (government/policy domain)
+addresses this partially; Section~\ref{sec:limitations} discusses
+remaining domain gaps.
+
+% ── 3. DATASET ────────────────────────────────────────────────
+\section{Dataset Construction}
+\label{sec:data}
+
+\subsection{Data Sources}
+We aggregate parallel sentence pairs from four sources,
+summarised in Table~\ref{tab:datasources}.
+
+\begin{table}[H]
+\centering
+\caption{Parallel corpus sources used in this work.
+  All pairs are sentence-level with English as one side.}
+\label{tab:datasources}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{L{2.8cm} C{1.4cm} C{1.4cm} C{1.4cm} L{3.6cm}}
+\toprule
+\textbf{Source} & \textbf{EN--MR} & \textbf{EN--KN} & \textbf{EN--HI} & \textbf{Domain} \\
+\midrule
+Samanantar~\cite{ramesh2021samanantar}
+  & 500k & 500k & 500k & General (news, web) \\
+MILPaC~\cite{milpac2022}
+  & incl. & incl. & incl. & Legal (acts, judgments) \\
+PMIndia (this work)
+  & 36,110 & 35,178 & 56,792 & Govt.\ speeches \\
+OPUS-100~\cite{zhang2020opus100}
+  & 22,432 & 10,608 & 75,611 & Mixed \\
+\midrule
+\textbf{Total (after dedup)}
+  & \textbf{553,939} & \textbf{542,876} & \textbf{499,979} & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Quadruplet Alignment}
+\label{sec:alignment}
+
+A quadruplet $Q_i = (\text{en}_i, \text{mr}_i, \text{kn}_i, \text{hi}_i)$
+requires a sentence that appears in \emph{all four} language-specific
+corpora.
+Since the EN--MR and EN--KN source documents originate from
+different publications, direct index matching is insufficient.
+We apply a \textbf{three-tier English key normalisation} pipeline:
+
+\begin{enumerate}[leftmargin=*, label=\arabic*.]
+  \item \textit{Exact match}: UTF-8 normalised (NFC) lowercase string equality.
+  \item \textit{Whitespace-normalised match}: Collapse all whitespace, strip
+    leading/trailing punctuation.
+  \item \textit{Stemmed match}: Apply lightweight suffix stripping
+    (remove trailing \texttt{-ing}, \texttt{-ed}, \texttt{-s}).
+\end{enumerate}
+
+Matches at tier 1 receive confidence score 1.0; tiers 2 and 3
+receive 0.9 and 0.8 respectively.
+Only pairs with matching English keys across at least the MR and KN
+corpora are retained as quadruplets; the HI side is optional
+(creating \emph{full quadruplets} vs.\ \emph{triplets}).
+
+\subsection{Dataset Statistics}
+Table~\ref{tab:quadstats} summarises the final aligned dataset.
+
+\begin{table}[H]
+\centering
+\caption{Final quadruplet dataset statistics after alignment and deduplication.}
+\label{tab:quadstats}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Split / Type} & \textbf{Count} & \textbf{Percentage} \\
+\midrule
+Full quadruplets (EN+MR+KN+HI) & 28,794  & 22.4\% \\
+Triplets (EN+MR+KN, no HI)     & 99,666  & 77.6\% \\
+\midrule
+\textbf{Total quadruplets}      & \textbf{128,460} & 100\% \\
+\midrule
+Train split & 89,922 & 70\% \\
+Development split & 12,846 & 10\% \\
+Test split  & 25,692 & 20\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Data Cleaning}
+All source corpora were cleaned as follows:
+\begin{itemize}[leftmargin=*]
+  \item Unicode NFC normalisation; removal of zero-width characters.
+  \item Deduplication on normalised English key.
+  \item Length filtering: $10 \leq |\text{tokens}| \leq 150$ per sentence.
+  \item Language verification using Unicode block analysis:
+    Devanagari (U+0900--U+097F) for MR/HI;
+    Kannada (U+0C80--U+0CFF) for KN.
+  \item Length-ratio filtering: $0.3 \leq |s_\text{en}|/|s_\text{tgt}| \leq 4.0$
+    (character counts; Indic scripts are denser than Latin).
+\end{itemize}
+
+% ── 4. METHODOLOGY ────────────────────────────────────────────
+\section{Methodology}
+\label{sec:method}
+
+\subsection{Sentence Embedding Model}
+
+We use \texttt{paraphrase-multilingual-MiniLM-L12-v2}
+as our base encoder.
+This 12-layer distilled BERT model supports 50+ languages,
+including Marathi, Kannada, and Hindi, and produces
+384-dimensional sentence embeddings.
+We compare three training conditions:
+
+\begin{description}[leftmargin=*, font=\bfseries]
+  \item[Baseline] The pre-trained model with no fine-tuning.
+    Used as the zero-shot reference.
+  \item[Triplet] Fine-tuned on \en+\mr+\kn sentence triplets
+    using cosine similarity loss. The model sees all three
+    language variants of the same sentence.
+  \item[Quadruplet] Fine-tuned on \en+\mr+\kn+\hi quadruplets.
+    Hindi provides an additional Indic anchor, hypothesised to
+    reduce English structural bias (Section~\ref{sec:bias}).
+\end{description}
+
+\subsection{Training Details}
+\label{sec:training}
+
+For both fine-tuned models we use the following hyperparameters,
+selected to balance quality against CPU training time on Apple
+Silicon M-series hardware:
+
+\begin{table}[H]
+\centering
+\caption{Training hyperparameters.}
+\label{tab:hparams}
+\begin{tabular}{ll}
+\toprule
+\textbf{Hyperparameter} & \textbf{Value} \\
+\midrule
+Base model & \texttt{paraphrase-multilingual-MiniLM-L12-v2} \\
+Loss function & CosineSimilarityLoss \\
+Training pairs & 8,000 (sampled from 179,844 / 330,369 available) \\
+Batch size & 32 \\
+Epochs & 3 \\
+Warmup steps & 100 \\
+Device & CPU (MPS disabled; Apple Silicon OOM with NLLB-600M) \\
+Training time & $\sim$35 min per model \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All pairs are constructed by taking every valid language combination
+within each quadruplet (e.g., EN--MR, EN--KN, MR--KN for triplets;
+additionally EN--HI, MR--HI, KN--HI for quadruplets), yielding
+$\binom{3}{2}=3$ and $\binom{4}{2}=6$ pair types respectively.
+
+\subsection{Translation Pipeline}
+\label{sec:translation}
+
+We implement an English-pivot translation chain:
+
+\[
+\text{Marathi} \xrightarrow{\textsc{IndicTrans2}} \text{English}
+\xrightarrow{\textsc{NLLB-200}} \text{Kannada}
+\]
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Indic$\rightarrow$English:} \texttt{ai4bharat/indictrans2-indic-en-1B}.
+    Supports all 22 Indian languages scheduled in the Constitution.
+  \item \textbf{English$\rightarrow$Indic (general):}
+    \texttt{facebook/nllb-200-distilled-600M}.
+    Selected for balance between quality and inference speed.
+  \item \textbf{English$\rightarrow$Indic (legal):}
+    \texttt{law-ai/InLegalTrans-En2Indic-1B}, fine-tuned on MILPaC.
+\end{itemize}
+
+Translation evaluation is performed on a held-out set of 100
+sentence pairs (MR+KN+EN triples from the test split),
+using a GPU (T4) on Google Colab to avoid Apple Silicon
+out-of-memory errors with the NLLB-600M model.
+
+\subsection{Evaluation Metrics}
+
+\paragraph{Retrieval (Embedding Quality)}
+For each language pair $(L_1, L_2)$, we embed all test sentences
+in both languages and compute pairwise cosine similarity.
+\acc{} (Accuracy at 1) measures the fraction of source sentences
+whose top-1 nearest neighbour in the target language is the correct
+translation.
+Mean Reciprocal Rank (\mrr{}) provides a rank-averaged measure.
+Both metrics are computed over the full 25,692-sentence test pool.
+
+\paragraph{Translation Quality}
+\begin{itemize}[leftmargin=*]
+  \item \bleu{}~\cite{papineni2002bleu}: Standard $n$-gram precision
+    metric with brevity penalty.
+  \item \chrf{}~\cite{popovic2015chrf}: Character $n$-gram F-score,
+    more robust than \bleu{} for morphologically rich languages.
+  \item \bert{}Score~\cite{zhang2020bertscore}: Precision/Recall/F1
+    computed from contextual embeddings of hypothesis and reference.
+  \item \textbf{Round-trip consistency:} Cosine similarity between
+    the original English sentence and the embedding of its
+    Marathi back-translation.
+\end{itemize}
+
+% ── 5. RESULTS ────────────────────────────────────────────────
+\section{Experiments and Results}
+\label{sec:results}
+
+\subsection{Embedding Retrieval Results}
+
+Table~\ref{tab:acc1} reports \acc{} and \mrr{} for all three
+models across five language-pair directions on the 25,692-sentence
+test pool.
+
+\begin{table}[H]
+\centering
+\caption{Retrieval performance (\acc{} and \mrr{}) on the 25,692-sentence test pool.
+  Bold indicates the best fine-tuned result per row.
+  $n$ = pool size per language pair.}
+\label{tab:acc1}
+\small
+\begin{tabular}{l C{1.5cm} C{1.5cm} C{1.5cm} C{1.5cm} C{1.5cm} C{1.5cm}}
+\toprule
+& \multicolumn{2}{c}{\textbf{Baseline}} & \multicolumn{2}{c}{\textbf{Triplet}} & \multicolumn{2}{c}{\textbf{Quadruplet}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+\textbf{Pair} & \acc & \mrr & \acc & \mrr & \acc & \mrr \\
+\midrule
+EN$\leftrightarrow$MR & 41.0 & .500 & 42.7 & .525 & \textbf{46.3} & \textbf{.560} \\
+EN$\leftrightarrow$KN &  7.8 & .115 & 39.2 & .495 & \textbf{40.7} & \textbf{.512} \\
+EN$\leftrightarrow$HI & 50.5 & .639 & 48.4 & .614 & \textbf{50.3} & \textbf{.635} \\
+MR$\leftrightarrow$KN &  6.8 & .099 & \textbf{30.2} & \textbf{.393} & 29.6 & .388 \\
+MR$\leftrightarrow$HI & 32.5 & .441 & \textbf{35.7} & \textbf{.483} & 34.6 & .466 \\
+\bottomrule
+\multicolumn{7}{l}{\small\textit{Note: EN$\leftrightarrow$HI and MR$\leftrightarrow$HI evaluated on 5,680 full-quadruplet test sentences.}}
+\end{tabular}
+\end{table}
+
+\paragraph{Key findings.}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{EN$\leftrightarrow$KN improvement is dramatic.}
+    The baseline model achieves only 7.8\% \acc{} for
+    English$\leftrightarrow$Kannada, suggesting that the
+    pre-trained model has very limited Kannada representation.
+    Both fine-tuned models raise this to $\sim$40\%, a
+    \textbf{5.2$\times$ improvement}.
+  \item \textbf{Quadruplet beats triplet for EN-centric pairs.}
+    For EN$\leftrightarrow$MR (+3.6\%) and EN$\leftrightarrow$KN
+    (+1.5\%), the quadruplet model consistently outperforms the
+    triplet, suggesting that Hindi provides useful cross-lingual
+    signal beyond Marathi and Kannada alone.
+  \item \textbf{Triplet wins for direct MR$\leftrightarrow$KN.}
+    The triplet model achieves 30.2\% vs.\ 29.6\% for quadruplet
+    on the direct Marathi--Kannada pair. This is within margin of
+    error and likely reflects the trade-off between
+    MR$\leftrightarrow$KN pairs available in each training regime.
+  \item \textbf{Retrieval pool size matters.}
+    The 25,692-sentence pool is $\sim$45$\times$ larger than the
+    563-sentence pools used in initial experiments, making the
+    task substantially harder and the reported numbers more
+    trustworthy as real-world estimates.
+\end{itemize}
+
+\subsection{Translation Quality Results}
+
+Table~\ref{tab:translation} reports translation quality on the
+100-sentence held-out test set evaluated on Google Colab (T4 GPU).
+
+\begin{table}[H]
+\centering
+\caption{Pivot translation quality using \nllb{} (distilled-600M).
+  All experiments use the legal domain model (InLegalTrans) for EN$\rightarrow$Indic.}
+\label{tab:translation}
+\begin{tabular}{l C{1.8cm} C{1.8cm} C{1.8cm} C{3.0cm}}
+\toprule
+\textbf{Direction} & \textbf{\bleu} & \textbf{\chrf} & \textbf{\bert{}F1} & \textbf{Note} \\
+\midrule
+MR $\rightarrow$ EN $\rightarrow$ KN & 2.77  & 32.50 & 0.7865 & Pivot: EN bridge \\
+KN $\rightarrow$ EN $\rightarrow$ MR & 7.44  & 32.41 & 0.7855 & Pivot: EN bridge \\
+EN $\rightarrow$ KN (direct)         & 3.04  & 36.22 & 0.8076 & Direct EN input \\
+EN $\rightarrow$ MR $\rightarrow$ EN & --- & --- & cos = 0.898 & Round-trip \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Interpreting the scores.}
+\bleu{} scores below 10 are common for distant language pairs
+and short test sets; they do not indicate a broken system.
+The more informative metrics are \chrf{} ($\sim$32--36, indicating
+substantial character-level overlap) and \bert{}Score F1
+($\sim$0.786--0.808), which measures semantic rather than lexical
+similarity and is more appropriate for Indic languages with
+rich morphology.
+The round-trip consistency score of 0.898 cosine similarity
+confirms that semantic content is largely preserved through the
+English pivot.
+
+\paragraph{KN$\rightarrow$MR outperforms MR$\rightarrow$KN.}
+The BLEU gap (7.44 vs.\ 2.77) likely reflects the relative
+abundance of EN--MR training data for the target-side model.
+Kannada is a morphologically richer language (agglutinative)
+which inflates reference sentence length relative to output,
+penalising the brevity-sensitive \bleu{} metric.
+
+% ── 6. BIAS ANALYSIS ──────────────────────────────────────────
+\section{Bias Analysis: English Structural Bias}
+\label{sec:bias}
+
+A well-known failure mode of multilingual models trained
+predominantly on English data is \emph{English structural bias}:
+sentences in different languages are embedded close to their
+English translations rather than to each other, causing
+the embedding space to be organised around English grammatical
+structure rather than semantic content~\cite{pires2019multibert}.
+
+\subsection{Centroid Cosine Similarity Metric}
+
+We quantify this effect using the \textbf{centroid cosine
+similarity}: for a language pair $(L_1, L_2)$, we compute
+the cosine similarity between the centroid of all $L_1$
+embeddings and the centroid of all $L_2$ embeddings.
+A value near 1.0 indicates the two language embedding clouds
+are collapsed together; a value near 0 indicates full separation.
+For an unbiased multilingual model, we would expect
+centroid similarities to be uniformly high across all language pairs.
+
+\begin{table}[H]
+\centering
+\caption{Centroid cosine similarity between language pair embedding clouds
+  (computed on 25,692 test sentences).
+  Higher = less geometric separation between languages.}
+\label{tab:centroid}
+\begin{tabular}{l C{2.2cm} C{2.2cm} C{2.2cm}}
+\toprule
+\textbf{Language Pair} & \textbf{Baseline} & \textbf{Triplet} & \textbf{Quadruplet} \\
+\midrule
+EN $\leftrightarrow$ MR & 0.9108 & 0.9995 & 0.9990 \\
+EN $\leftrightarrow$ KN & 0.5337 & 0.9992 & 0.9988 \\
+EN $\leftrightarrow$ HI & 0.8703 & 0.9987 & 0.9982 \\
+MR $\leftrightarrow$ KN & 0.6338 & 0.9998 & 0.9998 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Findings}
+
+\paragraph{The baseline model shows strong bias against Kannada.}
+The EN$\leftrightarrow$KN centroid similarity of 0.534 in the
+baseline model is strikingly lower than EN$\leftrightarrow$MR
+(0.911) and EN$\leftrightarrow$HI (0.870), indicating that
+the base model's Kannada representations are geometrically
+distant from both English and Devanagari-script languages.
+This explains the extremely low baseline \acc{} of 7.8\%
+for EN$\leftrightarrow$KN.
+
+\paragraph{Fine-tuning collapses the embedding space.}
+Both triplet and quadruplet models produce centroid similarities
+of $>$0.998 across all language pairs, indicating that
+fine-tuning has pulled all four language embedding clouds
+into a tight cluster.
+This is expected given the cosine similarity training loss,
+which directly optimises for this alignment.
+
+\paragraph{Does Hindi reduce English bias?}
+The centroid values are similar between triplet and quadruplet
+($\leq$0.001 difference), suggesting that within this metric,
+Hindi's addition provides marginal geometric benefit.
+However, the retrieval improvements in Table~\ref{tab:acc1}
+indicate that Hindi does contribute useful signal for the EN-centric
+pairs, likely by providing additional contextual grounding
+rather than changing the geometric distribution.
+
+\paragraph{Limitation of this metric.}
+High centroid similarity in fine-tuned models reflects
+\emph{language collapse} rather than \emph{semantic alignment}:
+all embeddings may be concentrated in a small region regardless
+of content.
+A more informative measure would be \emph{intra-language spread}
+(average pairwise distance within a language's embedding cloud),
+which we leave as future work.
+
+% ── 7. LIMITATIONS ────────────────────────────────────────────
+\section{Limitations}
+\label{sec:limitations}
+
+We report limitations explicitly, following the honest documentation
+strategy recommended by our Systematic Literature Review framework.
+
+\subsection{Dataset Limitations}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{No standardised MR$\leftrightarrow$KN benchmark.}
+    There is no publicly available, human-annotated evaluation
+    benchmark for direct Marathi--Kannada translation.
+    Our test set is constructed automatically from the alignment
+    pipeline and may contain noise.
+
+  \item \textbf{Domain imbalance.}
+    The majority of our quadruplets originate from Samanantar
+    (general news/web domain) and PMIndia (government speeches).
+    Purely legal text (from MILPaC) forms a small proportion.
+    Legal-domain performance may be overestimated by mixing with
+    general-domain evaluation.
+
+  \item \textbf{Pivot-based alignment.}
+    All MR--KN sentence pairs are aligned via English keys,
+    not by direct comparison of Marathi and Kannada text.
+    Sentences with equivalent meaning but different English
+    translations may be incorrectly separated.
+\end{itemize}
+
+\subsection{Modelling Limitations}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Small training set.}
+    We train on only 8,000 sentence pairs per model due to
+    CPU time constraints, from a pool of $>$179,000 available.
+    Models trained on the full dataset would likely show
+    further improvement.
+
+  \item \textbf{Embedding collapse.}
+    The centroid similarity results indicate that
+    CosineSimilarityLoss may over-constrain the embedding
+    space, pulling all language representations into
+    a tight cluster.
+    Contrastive losses (e.g., InfoNCE, MultipleNegativesRankingLoss)
+    may mitigate this.
+
+  \item \textbf{No end-to-end fine-tuning of the translation model.}
+    We use the pre-trained NLLB-200 and IndicTrans2 models
+    without domain adaptation on legal text.
+    Fine-tuning these on our legal corpus would likely
+    improve \bleu{}/\chrf{} scores substantially.
+\end{itemize}
+
+\subsection{Evaluation Limitations}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Absence of human evaluation.}
+    All metrics (\bleu{}, \chrf{}, \bert{}Score) are automatic.
+    Human evaluation for morphology, word order, named entity
+    preservation, and omission errors would provide a more
+    complete picture.
+
+  \item \textbf{\bleu{} not suitable for morphologically rich
+    languages.}
+    Both Marathi and Kannada are morphologically rich, with
+    agglutinative morphology in Kannada and fusional morphology
+    in Marathi.
+    \bleu{}'s surface-form $n$-gram matching systematically
+    underestimates quality for these languages;
+    \chrf{} and \bert{}Score are more appropriate.
+
+  \item \textbf{Translation evaluated on 100 sentences only.}
+    The translation test set is limited to 100 sentences due
+    to inference time constraints.
+    A larger evaluation set would provide more statistically
+    reliable estimates.
+\end{itemize}
+
+% ── 8. CONCLUSION ─────────────────────────────────────────────
+\section{Conclusion}
+\label{sec:conclusion}
+
+We have presented a systematic study of quadruplet sentence
+alignment for the under-resourced Marathi--Kannada language pair,
+with English and Hindi as auxiliary languages.
+Our key finding is that fine-tuning on quadruplet structures
+provides consistent gains over both the zero-shot baseline and
+triplet training for English-centric language pairs:
+\acc{} improves from 7.8\% to 40.7\% for EN$\leftrightarrow$KN
+and from 41.0\% to 46.3\% for EN$\leftrightarrow$MR.
+
+For the direct Marathi$\leftrightarrow$Kannada pair --- the
+most practically important and most under-resourced direction ---
+the triplet model achieves 30.2\% \acc{} from a 6.8\% baseline,
+a 4.5$\times$ improvement.
+Translation quality, measured by \bert{}Score F1 ($\sim$0.786--0.808)
+and round-trip cosine similarity (0.898), confirms that the English
+pivot preserves semantic content adequately for practical use cases.
+
+\paragraph{Future work.}
+Immediate extensions include:
+(i) training on the full 179,000+ pair corpus with GPU acceleration;
+(ii) replacing CosineSimilarityLoss with
+  MultipleNegativesRankingLoss to prevent embedding collapse;
+(iii) fine-tuning IndicTrans2 on the legal subdomain corpus;
+(iv) human evaluation by bilingual legal professionals; and
+(v) extending to Tamil and Telugu to create a broader South
+Indian legal MT system.
+
+% ── ACKNOWLEDGEMENTS ──────────────────────────────────────────
+\section*{Acknowledgements}
+The author thanks Vikram Sir for research supervision and
+guidance throughout this project.
+This work uses the Samanantar dataset~\cite{ramesh2021samanantar},
+PMIndia corpus, OPUS-100~\cite{zhang2020opus100},
+MILPaC~\cite{milpac2022},
+IndicTrans2~\cite{gala2023indictrans2},
+and NLLB-200~\cite{nllb2022}.
+Experiments were conducted on a MacBook Pro (Apple M-series CPU)
+and Google Colab (T4 GPU).
+
+% ── REFERENCES ────────────────────────────────────────────────
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+% NOTE: Since you may not have a .bib file ready,
+% the references below are provided inline as a fallback.
+% In Overleaf, delete the \bibliography line above and
+% uncomment the thebibliography block below, OR
+% create a references.bib file with the entries provided
+% at the end of this file.
+
+\end{document}

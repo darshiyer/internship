@@ -1,6 +1,6 @@
 {
-  "en_mr_pairs": 499967,
-  "en_kn_pairs": 499964,
+  "en_mr_pairs": 553939,
+  "en_kn_pairs": 542876,
   "en_mr_path": "/Users/darshiyer/Downloads/INTERNSHIP/legal-mt-mr-kn/data/processed/en_mr_legal.tsv",
   "en_kn_path": "/Users/darshiyer/Downloads/INTERNSHIP/legal-mt-mr-kn/data/processed/en_kn_legal.tsv",
   "en_hi_pairs": 499979,
