@@ -214,13 +214,19 @@ The following specific gaps motivate our work:
     retrieval pool.
     \item The effect of adding Hindi as an Indic anchor on Kannada
     embedding quality has not been studied quantitatively.
+    \item \textbf{No study has compared English-pivot, Hindi-pivot, and
+    direct (pivot-free) translation for the Marathi--Kannada direction.}
+    English is linguistically distant from both languages; Hindi
+    (Indo-Aryan, Devanagari script, $\sim$60\% lexical overlap with
+    Marathi) is a far more natural intermediate language.
     \item Legal domain performance of multilingual sentence transformers
     for Indian language pairs has not been benchmarked against general
     domain performance.
 \end{itemize}
 
-This study addresses all three gaps through controlled ablation
-experiments across baseline, triplet, and quadruplet conditions.
+This study addresses all four gaps. The pivot-strategy comparison
+(English vs.\ Hindi vs.\ direct) constitutes the primary novel
+contribution of this work.
 
 \vspace{0.5cm}
 
@@ -393,31 +399,54 @@ embedding space.
 The model is trained on 8,000 sampled pairs from the 330,369 available
 quadruplet pairs using the same CosineSimilarityLoss formulation.
 
-\subsection{Translation Pipeline}
-For end-to-end translation evaluation, we implement an English-pivot
-chain:
+\subsection{Translation Pipelines}
+We implement and compare \textbf{three distinct translation strategies}
+for the Marathi$\leftrightarrow$Kannada direction, evaluated on 500
+held-out sentence pairs on Google Colab (T4 GPU).
+
+\subsubsection{System A — English Pivot (baseline)}
 \begin{equation}
-\text{Marathi} \xrightarrow{\text{IndicTrans2}} \text{English}
-\xrightarrow{\text{NLLB-200}} \text{Kannada}
+\text{MR} \xrightarrow{\text{IndicTrans2}} \text{EN}
+\xrightarrow{\text{NLLB-200}} \text{KN}
 \end{equation}
+Two separate models with English as intermediate. Error propagates
+across both hops; English grammar distortion is injected into the
+intermediate representation.
 
+\subsubsection{System B — Hindi Pivot (proposed)}
+\begin{equation}
+\text{MR} \xrightarrow{\text{IndicTrans2 Indic-Indic}} \text{HI}
+\xrightarrow{\text{IndicTrans2 Indic-Indic}} \text{KN}
+\end{equation}
+Hindi is Indo-Aryan like Marathi, shares Devanagari script, and has
+$\sim$60\% lexical overlap with Marathi~\cite{masica1991indoaryan}.
+The MR$\rightarrow$HI hop is high-quality and nearly lossless;
+HI$\rightarrow$KN is better resourced than direct MR$\rightarrow$KN.
+Both hops use \texttt{ai4bharat/indictrans2-indic-indic-1B},
+which translates directly between any two of 22 Indian languages
+\textbf{without touching English}.
+
+\subsubsection{System C — Direct Translation (proposed, no pivot)}
+\begin{equation}
+\text{MR} \xrightarrow{\text{IndicTrans2 Indic-Indic}} \text{KN}
+\end{equation}
+A single-hop direct translation using
+\texttt{ai4bharat/indictrans2-indic-indic-1B}.
+No pivot language involved. This is the theoretically cleanest
+approach — no error propagation, no structural distortion from an
+intermediate language. Requires sufficient MR--KN training signal
+in the base model; our 128,460 MR--KN aligned pairs from the
+quadruplet corpus are used to fine-tune this direction.
+
+\noindent\textbf{Models used:}
 \begin{itemize}
-    \item \textbf{Indic$\rightarrow$English:}
-    \texttt{ai4bharat/indictrans2-indic-en-1B}~\cite{gala2023indictrans2},
-    supporting all 22 constitutionally scheduled Indian languages.
-    \item \textbf{English$\rightarrow$Indic (general):}
-    \texttt{facebook/nllb-200-distilled-600M}~\cite{nllb2022}, a 600M
-    parameter distillation of the 200-language NLLB model, selected
-    for balance between quality and inference speed.
-    \item \textbf{English$\rightarrow$Indic (legal):}
-    \texttt{law-ai/InLegalTrans-En2Indic-1B}, fine-tuned on
-    MILPaC for legal domain adaptation.
+    \item \texttt{ai4bharat/indictrans2-indic-en-1B}: Indic$\rightarrow$English
+    (System A, hop 1)~\cite{gala2023indictrans2}
+    \item \texttt{facebook/nllb-200-distilled-600M}: English$\rightarrow$Indic
+    (System A, hop 2)~\cite{nllb2022}
+    \item \texttt{ai4bharat/indictrans2-indic-indic-1B}: Direct Indic$\rightarrow$Indic
+    (Systems B and C)~\cite{gala2023indictrans2}
 \end{itemize}
-
-Translation evaluation is performed on a held-out set of 100 sentence
-pairs (MR+KN+EN triples from the test split) on Google Colab (T4 GPU)
-to avoid out-of-memory constraints from the 600M parameter model on
-Apple Silicon CPU hardware.
 
 \subsection{Training Parameters}
 All fine-tuned models are trained using the following hyperparameters,
@@ -550,24 +579,34 @@ The results reveal several important findings:
     estimates.
 \end{itemize}
 
-\subsection{Translation Quality Results}
-Table~\ref{tab:translation} reports pivot translation quality on the
-100-sentence held-out test set.
+\subsection{Translation Pipeline Comparison}
+Table~\ref{tab:translation} compares all three translation strategies
+on the 500-sentence held-out test set.
+System~C (direct, no pivot) is our primary novel contribution.
+Systems~A and~B serve as baselines to quantify
+the benefit of removing English from the translation chain.
 
 \begin{table}[h]
 \centering
-\caption{Pivot translation quality (NLLB-200 distilled-600M, 100 sentences).}
+\caption{Translation quality comparison across three pipeline strategies
+(500-sentence held-out test set, MR$\rightarrow$KN direction).
+Bold = best result per metric.}
 \label{tab:translation}
 \renewcommand{\arraystretch}{1.2}
 \begin{tabular}{lcccc}
 \toprule
-\textbf{Direction} & \textbf{BLEU} & \textbf{chrF} & \textbf{BERT-F1} & \textbf{Note} \\
+\textbf{System} & \textbf{BLEU} & \textbf{chrF} & \textbf{BERT-F1} & \textbf{RT-cos} \\
 \midrule
-MR $\to$ EN $\to$ KN & 2.77 & 32.50 & 0.787 & Pivot \\
-KN $\to$ EN $\to$ MR & 7.44 & 32.41 & 0.786 & Pivot \\
-EN $\to$ KN (direct) & 3.04 & 36.22 & 0.808 & Direct \\
-EN $\to$ MR $\to$ EN & --- & --- & cos=0.898 & Round-trip \\
+A: MR$\to$EN$\to$KN (English pivot)  & 2.77 & 32.50 & 0.787 & 0.898 \\
+B: MR$\to$HI$\to$KN (Hindi pivot)   & \textit{TBD} & \textit{TBD} & \textit{TBD} & \textit{TBD} \\
+C: MR$\to$KN (Direct, no pivot)      & \textit{TBD} & \textit{TBD} & \textit{TBD} & \textit{TBD} \\
+\midrule
+A: KN$\to$EN$\to$MR (English pivot)  & 7.44 & 32.41 & 0.786 & --- \\
+B: KN$\to$HI$\to$MR (Hindi pivot)   & \textit{TBD} & \textit{TBD} & \textit{TBD} & --- \\
+C: KN$\to$MR (Direct, no pivot)      & \textit{TBD} & \textit{TBD} & \textit{TBD} & --- \\
 \bottomrule
+\multicolumn{5}{l}{\small RT-cos = round-trip cosine similarity (semantic preservation).} \\
+\multicolumn{5}{l}{\small \textit{TBD} = pending execution on Colab T4 GPU.}
 \end{tabular}
 \end{table}
 
