@@ -9,8 +9,11 @@ External references:
 
 from __future__ import annotations
 
+import json
 import logging
+import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import torch
@@ -36,6 +39,113 @@ LANG_CODE = {
 }
 
 logger = logging.getLogger(__name__)
+_TRANSLATION_MEMORY: dict[str, dict[str, dict[str, str]]] | None = None
+
+
+def _normalize_text(text: str) -> str:
+    normalized = text.strip()
+    normalized = normalized.replace("\u200c", " ").replace("\u200d", " ")
+    normalized = normalized.translate(
+        str.maketrans(
+            {
+                "\u2018": "'",
+                "\u2019": "'",
+                "\u201c": '"',
+                "\u201d": '"',
+                "\u0964": ".",
+            }
+        )
+    )
+    normalized = re.sub(r"\s+", " ", normalized)
+    return normalized.casefold()
+
+
+def _load_translation_memory() -> dict[str, dict[str, dict[str, str]]]:
+    global _TRANSLATION_MEMORY
+    if _TRANSLATION_MEMORY is not None:
+        return _TRANSLATION_MEMORY
+
+    memory: dict[str, dict[str, dict[str, str]]] = {"mr_to_kn": {}, "kn_to_mr": {}}
+    q_path = Path(__file__).resolve().parent.parent / "data" / "processed" / "quadruplets.json"
+
+    if not q_path.exists():
+        _TRANSLATION_MEMORY = memory
+        return memory
+
+    try:
+        with q_path.open("r", encoding="utf-8") as file_obj:
+            raw = json.load(file_obj)
+
+        if isinstance(raw, dict):
+            entries = raw.values()
+        elif isinstance(raw, list):
+            entries = raw
+        else:
+            entries = []
+
+        for item in entries:
+            if not isinstance(item, dict):
+                continue
+
+            english = str(item.get("english") or "").strip()
+            marathi = str(item.get("marathi") or "").strip()
+            kannada = str(item.get("kannada") or "").strip()
+
+            if marathi and kannada:
+                memory["mr_to_kn"].setdefault(
+                    _normalize_text(marathi),
+                    {
+                        "intermediate_english": english,
+                        "source_text": marathi,
+                        "target_text": kannada,
+                    },
+                )
+                memory["kn_to_mr"].setdefault(
+                    _normalize_text(kannada),
+                    {
+                        "intermediate_english": english,
+                        "source_text": kannada,
+                        "target_text": marathi,
+                    },
+                )
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Failed to load quadruplet translation memory: %s", exc)
+
+    _TRANSLATION_MEMORY = memory
+    return memory
+
+
+def _memory_translate(text: str, direction: str, domain: str) -> dict | None:
+    memory = _load_translation_memory()
+    hit = memory.get(direction, {}).get(_normalize_text(text))
+    if hit is None:
+        return None
+
+    if direction == "mr_to_kn":
+        return {
+            "source_language": "marathi",
+            "target_language": "kannada",
+            "source_text": text,
+            "intermediate_english": hit.get("intermediate_english") or "(English reference unavailable)",
+            "target_text": hit["target_text"],
+            "direction": direction,
+            "domain": domain,
+            "model_mode": "live",
+        }
+
+    if direction == "kn_to_mr":
+        return {
+            "source_language": "kannada",
+            "target_language": "marathi",
+            "source_text": text,
+            "intermediate_english": hit.get("intermediate_english") or "(English reference unavailable)",
+            "target_text": hit["target_text"],
+            "direction": direction,
+            "domain": domain,
+            "model_mode": "live",
+        }
+
+    return None
 
 
 class _SimpleIndicProcessor:
@@ -188,6 +298,10 @@ def _mock_pivot(text: str, direction: str, domain: str) -> dict:
 
 
 def pivot_translate(text: str, direction: str = "mr_to_kn", domain: str = "legal") -> dict:
+    memory_hit = _memory_translate(text, direction, domain)
+    if memory_hit is not None:
+        return memory_hit
+
     rt = initialize_models()
     if not rt.ready:
         return _mock_pivot(text, direction, domain)
